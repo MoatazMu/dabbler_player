@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/home/home_screen.dart';
+import '../widgets/bottom_nav.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/explore/explore_screen.dart';
 import '../screens/bookings/bookings_screen.dart';
@@ -13,7 +13,7 @@ class AppRoutes {
   static const String createGame = '/create-game';
 
   static Map<String, WidgetBuilder> routes = {
-    home: (context) => const HomeScreen(),
+    home: (context) => const BottomNavigation(),
     profile: (context) => const ProfileScreen(),
     explore: (context) => const ExploreScreen(),
     bookings: (context) => const BookingsScreen(),

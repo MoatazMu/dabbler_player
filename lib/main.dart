@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'widgets/bottom_nav.dart';
 import 'routes/app_routes.dart';
 import 'themes/app_theme.dart';
 
@@ -17,7 +16,7 @@ class DabblerPlayerApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home: const BottomNavigation(),
+      initialRoute: AppRoutes.home,
       routes: AppRoutes.routes,
       debugShowCheckedModeBanner: false,
     );
