@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import '../../core/utils/greeting_helper.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -74,12 +75,12 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome back!',
+                    GreetingHelper.getGreeting(),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Ready to play some sports?',
+                    GreetingHelper.getWelcomeMessage().split('! ')[1],
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
