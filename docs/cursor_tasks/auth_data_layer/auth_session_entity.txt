@@ -1,0 +1,12 @@
+File: lib/features/authentication/domain/entities/auth_session.dart
+
+Prompt:
+- Define an AuthSession entity representing an authentication session.
+- Must include: accessToken, refreshToken, expiresAt, userId.
+- Add a computed getter isExpired (returns true if now is after expiresAt).
+- No serialization logic in this entity (pure domain object).
+- Add unit tests to verify isExpired logic and required field invariants.
+- Test names:
+  - test_auth_session_expired_true
+  - test_auth_session_expired_false
+  - test_auth_session_required_fields_invariant

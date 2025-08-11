@@ -1,0 +1,12 @@
+File: lib/features/authentication/data/models/auth_response_model.dart
+
+Prompt:
+- Implement an AuthResponseModel class to represent the response from an authentication API call.
+- Must include: user (UserModel), session (AuthSessionModel), error (nullable String), and any metadata.
+- Add fromJson and toJson methods for serialization.
+- Add unit tests to verify fromJson, toJson, and error handling logic.
+- Test names:
+  - test_auth_response_model_from_json_valid
+  - test_auth_response_model_to_json_valid
+  - test_auth_response_model_with_error
+  - test_auth_response_model_missing_fields

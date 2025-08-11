@@ -16,7 +16,6 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-enabled = true
 # Port to use for the local database URL.
 port = 54322
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
@@ -96,7 +95,7 @@ enable_signup = true
 enable_confirmations = true
 # Template for sending a confirmation message. Use {{ .Code }} to insert the confirmation code.
 template = "Your confirmation code is {{ .Code }}"
-test_otp = "000000"
+test_otp = { "000000" = "000000" }
 
 [auth.sms.twilio]
 enabled = false

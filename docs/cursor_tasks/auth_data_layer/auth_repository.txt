@@ -1,0 +1,14 @@
+File: lib/features/authentication/domain/repositories/auth_repository.dart
+
+Prompt:
+- Define an abstract AuthRepository interface for authentication operations.
+- Must include: signUp, signIn, signOut, refreshSession, getCurrentUser, isSignedIn, and updateProfile methods.
+- Specify method signatures using domain entities (User, AuthSession).
+- No implementation, just the interface.
+- Add unit test names for a mock implementation:
+  - test_auth_repository_sign_up_success
+  - test_auth_repository_sign_in_success
+  - test_auth_repository_sign_out
+  - test_auth_repository_refresh_session
+  - test_auth_repository_get_current_user
+  - test_auth_repository_update_profile

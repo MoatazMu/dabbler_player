@@ -1,0 +1,11 @@
+flutter_native_splash:
+  color: "#8B5CF6" # Use your brand's purple color
+  image: assets/logo.png
+  branding_mode: bottom
+  branding_dark: assets/logo.png
+  android: true
+  ios: true
+  web: false
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true 

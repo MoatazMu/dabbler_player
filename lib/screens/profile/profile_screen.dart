@@ -1,8 +1,71 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
+import '../activities/activities_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
+import '../../core/services/auth_service.dart';
+import '../../widgets/avatar_widget.dart';
 
-class ProfileScreen extends StatelessWidget {
+String capitalize(String text) {
+  if (text.isEmpty) return text;
+  return "${text[0].toUpperCase()}${text.substring(1).toLowerCase()}";
+}
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  User? _user;
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+  late final StreamSubscription<AuthState> _authStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _authStream = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      setState(() {
+        _user = Supabase.instance.client.auth.currentUser;
+      });
+      _loadUserData();
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final authService = AuthService();
+      final user = authService.getCurrentUser();
+      final profile = await authService.getUserProfile();
+      
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _userProfile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _authStream.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,319 +73,407 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Navigate to settings
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: Icon(LucideIcons.settings, size: 20),
+              onPressed: () {
+                context.push('/settings');
+              },
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            _buildProfileHeader(context),
-            const SizedBox(height: 24),
-            
-            // Stats Section
-            _buildStatsSection(context),
-            const SizedBox(height: 24),
-            
-            // Menu Options
-            _buildMenuOptions(context),
-            const SizedBox(height: 24),
-            
-            // Settings Section
-            _buildSettingsSection(context),
-          ],
-        ),
+      body: RefreshIndicator(
+        onRefresh: _loadUserData,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Profile Header
+                    _buildProfileHeader(context),
+                    const SizedBox(height: 32),
+                    // Stats Section
+                    _buildStatsSection(context),
+                    const SizedBox(height: 32),
+                    // Menu Options
+                    _buildMenuOptions(context),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
   Widget _buildProfileHeader(BuildContext context) {
-    return Container(
+    final userName = _userProfile?['name'] ?? 'User';
+    final userEmail = _user?.email ?? 'No email';
+    final userPhone = _userProfile?['phone'] ?? _user?.phone;
+    final userAge = _userProfile?['age'];
+    final userGender = _userProfile?['gender'];
+    final userSports = _userProfile?['sports'] as List<dynamic>?;
+    final userIntent = _userProfile?['intent'];
+
+    return SizedBox(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-      ),
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          Stack(
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: const Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.white,
+              // Avatar and edit button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 48),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: AvatarWidget(
+                        name: userName,
+                        size: 72,
+                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                        textColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),                  IconButton(
+                    icon: Icon(
+                      LucideIcons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    tooltip: 'Edit Profile',
+                    onPressed: () {
+                      context.push('/edit_profile');
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // User Name
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  userName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 22,
+                  ),
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    size: 16,
-                    color: Colors.white,
+              
+              const SizedBox(height: 8),
+              
+              // User Email
+              Text(
+                userEmail,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              
+              // User Phone (if available)
+              if (userPhone != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  userPhone,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
                   ),
                 ),
+              ],
+              
+              // User Details (Age, Gender)
+              if (userAge != null || userGender != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  [
+                    if (userAge != null) '$userAge years old',
+                    if (userGender != null) capitalize(userGender),
+                  ].join(' • '),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 12),
+              
+              // Sports and Intent Chips
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  // Sports Chip
+                  if (userSports != null && userSports.isNotEmpty)
+                    Chip(
+                      label: Text(
+                        '${userSports.length} Sports',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.08),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    ),
+                  
+                  // Intent Chip
+                  if (userIntent != null)
+                    Chip(
+                      label: Text(
+                        capitalize(userIntent),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'John Doe',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'john.doe@email.com',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Sports Enthusiast',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.secondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to edit profile
-            },
-            child: const Text('Edit Profile'),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildStatsSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your Stats',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Games Played',
-                      '47',
-                      Icons.sports_soccer,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Hours Played',
-                      '142',
-                      Icons.access_time,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Friends',
-                      '23',
-                      Icons.group,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Venues Visited',
-                      '12',
-                      Icons.location_on,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Rating',
-                      '4.8',
-                      Icons.star,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Loyalty Points',
-                      '850',
-                      Icons.emoji_events,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          color: Theme.of(context).colorScheme.primary,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
         Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
+          'Your Stats',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
-          ),
-          textAlign: TextAlign.center,
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.9,
+          children: [
+            _buildStatItem(context, 'Games', '47', LucideIcons.gamepad2),
+            _buildStatItem(context, 'Hours', '142', LucideIcons.clock),
+            _buildStatItem(context, 'Friends', '23', LucideIcons.users),
+            _buildStatItem(context, 'Venues', '12', LucideIcons.mapPin),
+            _buildStatItem(context, 'Rating', '4.8', LucideIcons.star),
+            _buildStatItem(context, 'Points', '850', LucideIcons.trophy),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildMenuOptions(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        // no border
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildMenuCard(
-            context,
-            'My Activities',
-            [
-              _buildMenuItem(
-                'My Bookings',
-                Icons.book,
-                () => AppRoutes.navigateToBookings(context),
-              ),
-              _buildMenuItem(
-                'My Games',
-                Icons.sports_soccer,
-                () {
-                  // Navigate to my games
-                },
-              ),
-              _buildMenuItem(
-                'Game History',
-                Icons.history,
-                () {
-                  // Navigate to game history
-                },
-              ),
-            ],
+          Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
           ),
-          const SizedBox(height: 16),
-          _buildMenuCard(
-            context,
-            'Social',
-            [
-              _buildMenuItem(
-                'Friends',
-                Icons.group,
-                () {
-                  // Navigate to friends
-                },
-              ),
-              _buildMenuItem(
-                'Teams',
-                Icons.groups,
-                () {
-                  // Navigate to teams
-                },
-              ),
-              _buildMenuItem(
-                'Invitations',
-                Icons.mail,
-                () {
-                  // Navigate to invitations
-                },
-              ),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
+              fontSize: 24,
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildMenuCard(
-            context,
-            'Rewards',
-            [
-              _buildMenuItem(
-                'Loyalty Points',
-                Icons.emoji_events,
-                () {
-                  // Navigate to loyalty points
-                },
+          const SizedBox(height: 2),
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
               ),
-              _buildMenuItem(
-                'Achievements',
-                Icons.star,
-                () {
-                  // Navigate to achievements
-                },
-              ),
-              _buildMenuItem(
-                'Referrals',
-                Icons.share,
-                () {
-                  // Navigate to referrals
-                },
-              ),
-            ],
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildMenuOptions(BuildContext context) {
+    return Column(
+      children: [
+        _buildMenuCard(
+          context,
+          'My Activities',
+          [
+            _buildMenuItem(
+              'My Bookings',
+              LucideIcons.book,
+              () => context.push('/bookings'),
+            ),
+            _buildMenuItem(
+              'My Games',
+              LucideIcons.gamepad2,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('My Games - Coming soon!'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Game History',
+              LucideIcons.history,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ActivitiesScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Divider(color: Colors.grey.withValues(alpha: 0.2), thickness: 1, height: 1),
+        const SizedBox(height: 8),
+        _buildMenuCard(
+          context,
+          'Social',
+          [
+            _buildMenuItem(
+              'Friends',
+              LucideIcons.users,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Friends - Feature under development!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Teams',
+              LucideIcons.users,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Teams - Feature under development!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Invitations',
+              LucideIcons.mail,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Invitations - Feature under development!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Divider(color: Colors.grey.withValues(alpha: 0.2), thickness: 1, height: 1),
+        const SizedBox(height: 8),
+        _buildMenuCard(
+          context,
+          'Rewards',
+          [
+            _buildMenuItem(
+              'Loyalty Points',
+              LucideIcons.trophy,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🏆 Loyalty Points: 850 points available!'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Achievements',
+              LucideIcons.star,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('⭐ Achievements: 12 unlocked, 8 remaining!'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Referrals',
+              LucideIcons.share,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🔗 Referrals: Invite friends and earn rewards!'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildMenuCard(BuildContext context, String title, List<Widget> children) {
-    return Card(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -330,9 +481,10 @@ class ProfileScreen extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             ...children,
           ],
         ),
@@ -345,118 +497,22 @@ class ProfileScreen extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon),
       title: Text(title),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: Icon(LucideIcons.chevronRight, size: 16),
       onTap: onTap,
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Settings & Support',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildMenuItem(
-                'Account Settings',
-                Icons.account_circle,
-                () {
-                  // Navigate to account settings
-                },
-              ),
-              _buildMenuItem(
-                'Privacy & Security',
-                Icons.security,
-                () {
-                  // Navigate to privacy settings
-                },
-              ),
-              _buildMenuItem(
-                'Notifications',
-                Icons.notifications,
-                () {
-                  // Navigate to notification settings
-                },
-              ),
-              _buildMenuItem(
-                'Payment Methods',
-                Icons.payment,
-                () {
-                  // Navigate to payment methods
-                },
-              ),
-              _buildMenuItem(
-                'Help & Support',
-                Icons.help,
-                () {
-                  // Navigate to help
-                },
-              ),
-              _buildMenuItem(
-                'About',
-                Icons.info,
-                () {
-                  // Navigate to about
-                },
-              ),
-              const Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
-                  'Sign Out',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  _showSignOutDialog(context);
-                },
-              ),
-            ],
-          ),
-        ),
+  Future<void> _refreshProfileData(BuildContext context) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('👤 Profile data refreshed successfully!'),
+        backgroundColor: Colors.purple,
+        duration: Duration(seconds: 2),
       ),
     );
   }
-
-  void _showSignOutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Handle sign out logic
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Signed out successfully')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text('Sign Out'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
+

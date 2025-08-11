@@ -1,0 +1,12 @@
+File: lib/features/authentication/domain/entities/user.dart
+
+Prompt:
+- Define a User entity class representing an authenticated user.
+- Must include: id, email, phone, displayName, createdAt, updatedAt, and any profile completion fields.
+- Add a computed getter isProfileComplete (returns true if all required profile fields are filled).
+- No serialization logic in this entity (pure domain object).
+- Add unit tests to verify isProfileComplete logic and required field invariants.
+- Test names:
+  - test_user_profile_complete_true
+  - test_user_profile_complete_false
+  - test_user_required_fields_invariant

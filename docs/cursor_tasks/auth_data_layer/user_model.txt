@@ -1,0 +1,13 @@
+File: lib/features/authentication/data/models/user_model.dart
+
+Prompt:
+- Implement a UserModel class for data layer representation of a user.
+- Must include: id, email, phone, displayName, createdAt, updatedAt, and profile fields.
+- Add fromJson and toJson methods for serialization.
+- Add a toEntity() method to convert to the domain User entity.
+- Add unit tests to verify fromJson, toJson, and toEntity logic.
+- Test names:
+  - test_user_model_from_json_valid
+  - test_user_model_to_json_valid
+  - test_user_model_to_entity
+  - test_user_model_missing_fields
